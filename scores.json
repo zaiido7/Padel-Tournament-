@@ -1,0 +1,14 @@
+{
+  "groupA": [
+    {"team": "خالد الدبو و كريم شقير", "played": 2, "won": 1, "lost": 1, "setsFor": 3, "setsAgainst": 2, "points": 3},
+    {"team": "احمد بني عوده و رافع خريسات", "played": 2, "won": 2, "lost": 0, "setsFor": 4, "setsAgainst": 1, "points": 6},
+    {"team": "كنان الشططاوي و عمر خصاونة", "played": 2, "won": 0, "lost": 2, "setsFor": 1, "setsAgainst": 4, "points": 0},
+    {"team": "احمد حموري و رضا شادي", "played": 2, "won": 1, "lost": 1, "setsFor": 2, "setsAgainst": 2, "points": 3}
+  ],
+  "groupB": [
+    {"team": "سيف صباحة و زيد العجلوني", "played": 2, "won": 2, "lost": 0, "setsFor": 4, "setsAgainst": 1, "points": 6},
+    {"team": "عون البلس و عامر العمري", "played": 2, "won": 1, "lost": 1, "setsFor": 2, "setsAgainst": 2, "points": 3},
+    {"team": "مؤمن نجم و نمر العريق", "played": 2, "won": 0, "lost": 2, "setsFor": 1, "setsAgainst": 3, "points": 0},
+    {"team": "زيد جرادات و يزن موسى", "played": 2, "won": 1, "lost": 1, "setsFor": 2, "setsAgainst": 2, "points": 3}
+  ]
+}
