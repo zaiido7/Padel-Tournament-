@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Countdown Timer Lux</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    background: #0b0c2a; /* dark navy */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    color: #ffd700; /* gold */
+  }
+
+  .countdown {
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: bold;
+    text-shadow: 0 0 15px #ffd700, 0 0 30px #ffd700;
+    z-index: 2;
+    position: relative;
+  }
+
+  .countdown span {
+    display: inline-block;
+    min-width: 80px;
+    background: rgba(255, 215, 0, 0.15);
+    margin: 5px;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px #ffd700;
+  }
+
+  /* gold spark effects */
+  .spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: float 5s linear infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) translateX(0) scale(0.3); opacity: 0.6; }
+    50% { transform: translateY(50vh) translateX(20px) scale(1); opacity: 1; }
+    100% { transform: translateY(-10vh) translateX(-20px) scale(0.3); opacity: 0; }
+  }
+
+  /* thin gold lines moving upward */
+  .line {
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to top, #ffd700, transparent);
+    opacity: 0.7;
+    animation: rise 4s linear infinite;
+  }
+
+  @keyframes rise {
+    0% { transform: translateY(100vh); opacity: 0; }
+    50% { opacity: 0.7; }
+    100% { transform: translateY(-20px); opacity: 0; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="countdown">
+  <span id="days">00</span> Days
+  <span id="hours">00</span> Hours
+  <span id="minutes">00</span> Minutes
+  <span id="seconds">00</span> Seconds
+</div>
+
+<script>
+  // generate gold sparks
+  for(let i=0; i<50; i++){
+    let spark = document.createElement('div');
+    spark.classList.add('spark');
+    spark.style.left = Math.random() * 100 + 'vw';
+    spark.style.animationDuration = (3 + Math.random()*5) + 's';
+    spark.style.width = spark.style.height = (3 + Math.random()*5) + 'px';
+    document.body.appendChild(spark);
+  }
+
+  // generate thin gold lines
+  for(let i=0; i<30; i++){
+    let line = document.createElement('div');
+    line.classList.add('line');
+    line.style.left = Math.random() * 100 + 'vw';
+    line.style.animationDuration = (2 + Math.random()*3) + 's';
+    line.style.height = (10 + Math.random()*30) + 'px';
+    document.body.appendChild(line);
+  }
+
+  function updateCountdown() {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const nextMonday = new Date(now);
+
+    // Monday 3:00 PM
+    const targetHour = 15;
+    const targetMinute = 0;
+    const daysUntilMonday = (1 + 7 - dayOfWeek) % 7 || 7;
+    nextMonday.setDate(now.getDate() + daysUntilMonday);
+    nextMonday.setHours(targetHour, targetMinute, 0, 0);
+
+    const diff = nextMonday - now;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
+    document.getElementById('days').textContent = days.toString().padStart(2,'0');
+    document.getElementById('hours').textContent = hours.toString().padStart(2,'0');
+    document.getElementById('minutes').textContent = minutes.toString().padStart(2,'0');
+    document.getElementById('seconds').textContent = seconds.toString().padStart(2,'0');
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+</script>
+
+</body>
+</html>
