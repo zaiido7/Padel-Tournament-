@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smash & Breath - YU LC</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    background-color: #0b0c2a; /* أزرق داكن */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #ffd700; /* الذهبي */
+    text-align: center;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  h1 {
+    font-size: 4em;
+    font-weight: bold;
+    text-shadow: 0 0 4px #ffd700, 0 0 8px #ffd700;
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 2em;
+    font-weight: 600;
+    text-shadow: 0 0 3px #ffd700, 0 0 6px #ffd700;
+    margin: 0;
+  }
+
+  .divider {
+    width: 100px;
+    height: 3px;
+    background-color: #ffd700;
+    border-radius: 2px;
+    margin-top: 10px;
+  }
+
+  .countdown {
+    display: flex;
+    gap: 15px;
+    font-size: 2em;
+    margin-top: 20px;
+    text-shadow: 0 0 3px #ffd700, 0 0 6px #ffd700;
+  }
+
+  .countdown span {
+    display: inline-block;
+    min-width: 60px;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px #ffd700;
+  }
+
+  .label {
+    display: block;
+    font-size: 0.5em;
+    margin-top: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>SMASH & BREATH</h1>
+  <h2>YU LC</h2>
+  <div class="divider"></div>
+
+  <div class="countdown">
+    <span><span id="days">00</span><span class="label">Days</span></span>
+    <span><span id="hours">00</span><span class="label">Hours</span></span>
+    <span><span id="minutes">00</span><span class="label">Minutes</span></span>
+    <span><span id="seconds">00</span><span class="label">Seconds</span></span>
+  </div>
+</div>
+
+<script>
+function updateCountdown() {
+  const now = new Date();
+  const targetDate = new Date();
+
+  const today = now.getDay(); // 0=الأحد, 1=الاثنين, ..., 6=السبت
+  let daysUntilMonday = (1 - today + 7) % 7;
+  if (daysUntilMonday === 0 && now.getHours() >= 15) {
+    daysUntilMonday = 7; // إذا اليوم الاثنين بعد الساعة 3 عصراً، ننتظر الاثنين القادم
+  }
+
+  targetDate.setDate(now.getDate() + daysUntilMonday);
+  targetDate.setHours(15, 0, 0, 0);
+
+  const diff = targetDate - now;
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+
+  document.getElementById('days').textContent = days.toString().padStart(2,'0');
+  document.getElementById('hours').textContent = hours.toString().padStart(2,'0');
+  document.getElementById('minutes').textContent = minutes.toString().padStart(2,'0');
+  document.getElementById('seconds').textContent = seconds.toString().padStart(2,'0');
+}
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+</script>
+
+</body>
+</html>
