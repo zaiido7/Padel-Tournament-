@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMASH & BREATH - Tournament</title>
+<style>
+body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; margin:0; padding:0; background:#0b1e3a; color:#fff;}
+.hidden {display:none;}
+header {padding:10px; background-color: rgba(0,0,0,0.5);}
+header h1 {margin:0;font-size:2rem;text-align:center; color:#ffd700; letter-spacing:2px;}
+header h2 {margin:0;font-size:1.5rem;text-align:center; color:#ffd700;}
+.nav-container {display:flex; justify-content:space-between; align-items:flex-start; padding:10px; background:rgba(0,0,0,0.3);}
+.nav-left, .nav-right {display:flex; flex-direction:column; gap:5px;}
+.nav-left a, .nav-right a, .nav-left select, .nav-left button {padding:5px 10px; border-radius:5px; border:none; font-size:0.85rem; cursor:pointer; text-decoration:none; color:#000; background:#ffd700; text-align:center;}
+.nav-right a {margin-bottom:5px;}
+button {padding:15px 30px; margin:10px; font-size:1.2rem; border:none; border-radius:8px; cursor:pointer; background:#ffd700; color:#000;}
+button:hover {background:#ffc107;}
+.container {display:flex; flex-wrap:wrap; justify-content:center; gap:20px; padding:20px;}
+.group, .knockout {background:rgba(255,255,255,0.05); border-radius:10px; padding:20px; min-width:350px; flex:1 1 350px;}
+.group h2, .knockout h2 {text-align:center;margin-bottom:10px; color:#ffd700;}
+.team {margin-bottom:20px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px;}
+.team h3 {margin:5px 0;}
+.matches {display:flex; flex-wrap:nowrap; gap:10px; overflow-x:auto;}
+.match {background:rgba(255,255,255,0.05); padding:5px; border-radius:5px; min-width:140px; flex:0 0 auto;}
+.match label {display:block; font-size:0.8rem; margin-bottom:4px;}
+input {width:50px; text-align:center; margin-top:2px;}
+.standings {margin-top:20px; text-align:center;}
+.standings h2 {color:#00ffea;}
+.knockout-match {margin-bottom:10px; padding:5px; background:rgba(0,0,0,0.2); border-radius:5px;}
+.knockout h3 {margin:5px 0;}
+.champion {text-align:center; margin-top:20px; font-size:1.5rem; color:#ffdd00;}
+.winner {background-color: rgba(0,255,0,0.3);}
+.loser {background-color: rgba(255,0,0,0.3);}
+.disabled input {background:#ccc;color:#666; cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<div id="welcomeScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center;">
+  <h1 style="font-size:3rem; color:#ffd700; margin-bottom:10px;">Welcome to SMASH & BREATH</h1>
+  <h2 style="font-size:2rem; color:#ffd700; margin-bottom:40px;">YU LC</h2>
+  <button id="participantsBtn">Participants</button>
+  <button id="adminBtn">Admins</button>
+</div>
+
+<div id="tournamentScreen" class="hidden">
+<header>
+<h1>SMASH & BREATH</h1>
+<h2>YU LC</h2>
+<div class="nav-container">
+  <div class="nav-left" id="teamsNav"></div>
+  <div class="nav-right">
+    <a href="#QuarterFinals">Quarter-Finals</a>
+    <a href="#SemiFinals">Semi-Finals</a>
+    <a href="#Final">Final</a>
+    <a href="#Champion">Champion</a>
+  </div>
+</div>
+</header>
+
+<div class="container">
+<div class="group" id="groupA"><h2>Group A</h2></div>
+<div class="group" id="groupB"><h2>Group B</h2></div>
+</div>
+
+<div class="standings"><h2>Standings</h2><div id="standings"></div></div>
+
+<div class="knockout">
+<h2 id="QuarterFinals">Quarter-Finals</h2><div id="knockouts"></div>
+<h2 id="SemiFinals">Semi-Finals</h2><div id="semi-finals"></div>
+<h2 id="Final">Final</h2><div id="final"></div>
+<div class="champion" id="Champion"><strong>Champion: <span id="championName">TBD</span></strong></div>
+</div>
+</div>
+
+<script>
+	<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBnrUCxNll4hSkRoAHVEud5twKwMbkwJ9k",
+    authDomain: "padel-48fa5.firebaseapp.com",
+    projectId: "padel-48fa5",
+    storageBucket: "padel-48fa5.firebasestorage.app",
+    messagingSenderId: "816613748764",
+    appId: "1:816613748764:web:7039991943a3004116efd9",
+    measurementId: "G-0HFBEX9ZYE"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+
+<script> 
+// Variables
+let isAdmin=false, isParticipant=false;
+let tournamentStarted=false;
+const matchCount=7;
+
+const teamsA=[
+"خالد البدو و كريم شقير","احمد بني عوده و رافع خريسات","كنان الشطناوي و عمر خصاونة","احمد حموري و رضا شادي",
+"جعفر السريحين و عبدالله بطاينة","محمد يوسف و ذوالفقار","ايهم خصاونة و يوسف الشباب","ورد و حلا غرايبة"
+];
+const teamsB=[
+"سيف صبابحة و زيد العجلوني","عون البلص و عامر العمري","مؤمن نجم و نمر العريق","زيد جرادات و يزن موسى",
+"محمد بني هاني و عبد الرحمن ابو ملوح","ايثار الشطناوي و حسن حداد","المندّر مدحت و عبد الرحمن ابو لاوي","عامر عياش و علاء المشرقي"
+];
+
+let knockoutData = { QF: [], SF: [], Final: [], Champion: '' };
+
+// Welcome buttons
+document.getElementById('participantsBtn').addEventListener('click',()=>{
+  if(!tournamentStarted){
+    isParticipant=true; isAdmin=false;
+    document.getElementById('welcomeScreen').classList.add('hidden');
+    document.getElementById('tournamentScreen').classList.remove('hidden');
+    startTournament();
+    tournamentStarted=true;
+  }
+});
+document.getElementById('adminBtn').addEventListener('click',()=>{
+  if(!tournamentStarted){
+    const code=prompt("Enter Admin Code:");
+    if(code==='2537'){
+      isAdmin=true; isParticipant=false;
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('tournamentScreen').classList.remove('hidden');
+      startTournament();
+      tournamentStarted=true;
+    } else alert("Incorrect code!");
+  }
+});
+
+// Populate Teams Nav
+function populateTeamsNav(){
+  const nav=document.getElementById('teamsNav');
+  nav.innerHTML='';
+  teamsA.forEach((t,i)=>{
+    const a=document.createElement('a'); a.href='#teamA'+(i+1); a.textContent=t; nav.appendChild(a);
+  });
+  teamsB.forEach((t,i)=>{
+    const a=document.createElement('a'); a.href='#teamB'+(i+1); a.textContent=t; nav.appendChild(a);
+  });
+}
+
+// Tournament setup
+function startTournament(){
+  populateTeamsNav();
+  const containerA=document.getElementById('groupA');
+  const containerB=document.getElementById('groupB');
+
+  function createTeamDiv(container,name,id){
+    const div=document.createElement('div'); div.className='team'; div.id=id;
+    let matchesHTML='';
+    for(let m=1;m<=matchCount;m++){
+      matchesHTML+=`<div class="match">
+<label>Match ${m} Sets For<input type="number" min="0" value="0" class="setsForInput"></label>
+<label>Match ${m} Sets Against<input type="number" min="0" value="0" class="setsAgainstInput"></label>
+</div>`;
+    }
+    div.innerHTML=`<h3>${name}</h3><div class="matches">${matchesHTML}</div>
+<p>Played: <span class="played">0</span> | Won: <span class="won">0</span> | Lost: <span class="lost">0</span> | Sets For: <span class="setsFor">0</span> | Sets Against: <span class="setsAgainst">0</span> | Diff: <span class="diff">0</span> | Points: <span class="points">0</span></p>`;
+    container.appendChild(div);
+  }
+
+  teamsA.forEach((t,i)=>createTeamDiv(containerA,t,'teamA'+(i+1)));
+  teamsB.forEach((t,i)=>createTeamDiv(containerB,t,'teamB'+(i+1)));
+
+  if(isParticipant) document.querySelectorAll('input').forEach(inp=>inp.disabled=true);
+
+  attachInputListeners();
+  loadFireBase();
+  updateStandings();
+  updateKnockoutsFull();
+}
+
+// Standings Calculation
+function updateStandings(){
+  const allTeams=[...teamsA.map((t,i)=>'teamA'+(i+1)), ...teamsB.map((t,i)=>'teamB'+(i+1))];
+  allTeams.forEach(id=>{
+    const teamDiv=document.getElementById(id);
+    const matches=teamDiv.querySelectorAll('.match');
+    let played=0, won=0, lost=0, setsFor=0, setsAgainst=0;
+    matches.forEach(match=>{
+      const sf=Number(match.querySelector('.setsForInput').value);
+      const sa=Number(match.querySelector('.setsAgainstInput').value);
+      if(sf>0 || sa>0){played++; setsFor+=sf; setsAgainst+=sa;}
+      if(sf>sa) won++; else if(sa>sf) lost++;
+    });
+    const diff=setsFor-setsAgainst;
+    const points=won*3;
+    teamDiv.querySelector('.played').textContent=played;
+    teamDiv.querySelector('.won').textContent=won;
+    teamDiv.querySelector('.lost').textContent=lost;
+    teamDiv.querySelector('.setsFor').textContent=setsFor;
+    teamDiv.querySelector('.setsAgainst').textContent=setsAgainst;
+    teamDiv.querySelector('.diff').textContent=diff;
+    teamDiv.querySelector('.points').textContent=points;
+  });
+}
+
+// Knockouts Full Update with TBD fix
+function updateKnockoutsFull(){
+  const allTeams=[...teamsA.map((t,i)=>'teamA'+(i+1)), ...teamsB.map((t,i)=>'teamB'+(i+1))];
+  const anyPlayed = allTeams.some(id=>Number(document.getElementById(id).querySelector('.played').textContent) > 0);
+
+  if(!anyPlayed){
+    knockoutData.QF = [{team1:'TBD',team2:'TBD',winner:'TBD'}, {team1:'TBD',team2:'TBD',winner:'TBD'}];
+    knockoutData.SF = [{team1:'TBD',team2:'TBD',winner:'TBD'}];
+    knockoutData.Final = [{team1:'TBD',team2:'TBD',winner:'TBD'}];
+    knockoutData.Champion = 'TBD';
+    renderKnockouts();
+    return;
+  }
+
+  const sortedA = [...teamsA.map((t,i)=>'teamA'+(i+1))].sort((a,b)=>{
+    const pa = Number(document.getElementById(a).querySelector('.points').textContent);
+    const pb = Number(document.getElementById(b).querySelector('.points').textContent);
+    if(pb!==pa) return pb-pa;
+    const da = Number(document.getElementById(a).querySelector('.diff').textContent);
+    const db = Number(document.getElementById(b).querySelector('.diff').textContent);
+    return db-da;
+  });
+  const sortedB = [...teamsB.map((t,i)=>'teamB'+(i+1))].sort((a,b)=>{
+    const pa = Number(document.getElementById(a).querySelector('.points').textContent);
+    const pb = Number(document.getElementById(b).querySelector('.points').textContent);
+    if(pb!==pa) return pb-pa;
+    const da = Number(document.getElementById(a).querySelector('.diff').textContent);
+    const db = Number(document.getElementById(b).querySelector('.diff').textContent);
+    return db-da;
+  });
+
+  // QF
+  knockoutData.QF = [
+    {team1: sortedA[0], team2: sortedB[1], winner:''},
+    {team1: sortedB[0], team2: sortedA[1], winner:''}
+  ];
+
+  knockoutData.QF.forEach(match=>{
+    if(match.team1!=='TBD' && match.team2!=='TBD'){
+      const won1=Number(document.getElementById(match.team1).querySelector('.won').textContent);
+      const won2=Number(document.getElementById(match.team2).querySelector('.won').textContent);
+      match.winner = won1>won2 ? match.team1 : (won2>won1 ? match.team2 : 'TBD');
+    } else match.winner='TBD';
+  });
+
+  // SF
+  knockoutData.SF = [
+    {team1: knockoutData.QF[0].winner, team2: knockoutData.QF[1].winner, winner:''}
+  ];
+  knockoutData.SF.forEach(match=>{
+    if(match.team1!=='TBD' && match.team2!=='TBD'){
+      const won1=Number(document.getElementById(match.team1).querySelector('.won').textContent);
+      const won2=Number(document.getElementById(match.team2).querySelector('.won').textContent);
+      match.winner = won1>won2 ? match.team1 : (won2>won1 ? match.team2 : 'TBD');
+    } else match.winner='TBD';
+  });
+
+  // Final
+  knockoutData.Final = [
+    {team1: knockoutData.SF[0].winner, team2:'TBD', winner: knockoutData.SF[0].winner!=='TBD'? knockoutData.SF[0].winner:'TBD'}
+  ];
+
+  // Champion
+  knockoutData.Champion = knockoutData.Final[0].winner || 'TBD';
+
+  renderKnockouts();
+}
+
+// Render Knockouts
+function renderKnockouts(){
+  const QFContainer=document.getElementById('knockouts');
+  QFContainer.innerHTML='';
+  knockoutData.QF.forEach((match,i)=>{
+    const t1=document.getElementById(match.team1)?.querySelector('h3').textContent||'TBD';
+    const t2=document.getElementById(match.team2)?.querySelector('h3').textContent||'TBD';
+    const div=document.createElement('div'); div.className='knockout-match';
+    div.innerHTML=`<p>QF Match ${i+1}: ${t1} vs ${t2} | Winner: ${match.winner}</p>`;
+    QFContainer.appendChild(div);
+  });
+
+  const SFContainer=document.getElementById('semi-finals');
+  SFContainer.innerHTML='';
+  knockoutData.SF.forEach((match,i)=>{
+    const t1=document.getElementById(match.team1)?.querySelector('h3').textContent||'TBD';
+    const t2=document.getElementById(match.team2)?.querySelector('h3').textContent||'TBD';
+    const div=document.createElement('div'); div.className='knockout-match';
+    div.innerHTML=`<p>Semi-Final ${i+1}: ${t1} vs ${t2} | Winner: ${match.winner}</p>`;
+    SFContainer.appendChild(div);
+  });
+
+  const FContainer=document.getElementById('final');
+  FContainer.innerHTML='';
+  if(knockoutData.Final.length>0){
+    const match=knockoutData.Final[0];
+    const t1=document.getElementById(match.team1)?.querySelector('h3').textContent||'TBD';
+    const t2=match.team2||'TBD';
+    const div=document.createElement('div'); div.className='knockout-match';
+    div.innerHTML=`<p>Final: ${t1} vs ${t2} | Winner: ${match.winner}</p>`;
+    FContainer.appendChild(div);
+  }
+
+  document.getElementById('championName').textContent=knockoutData.Champion;
+}
+
+// Input Listeners & FireBase
+function attachInputListeners(){
+  document.querySelectorAll('.setsForInput, .setsAgainstInput').forEach(input=>{
+    input.addEventListener('input',()=>{
+      updateStandings();
+      updateKnockoutsFull();
+      saveFireBase();
+    });
+  });
+}
+
+function saveFireBase(){
+  const data={};
+  document.querySelectorAll('.team').forEach(team=>{
+    const id=team.id;
+    const inputs=[...team.querySelectorAll('.setsForInput')].map(inp=>inp.value);
+    data[id]=inputs;
+  });
+  FireBase.setItem('smashBreathData',JSON.stringify(data));
+}
+
+function loadFireBase(){
+  const data=JSON.parse(FireBase.getItem('smashBreathData')||'{}');
+  Object.keys(data).forEach(id=>{
+    const team=document.getElementById(id);
+    if(team){
+      const inputs=team.querySelectorAll('.setsForInput');
+      inputs.forEach((inp,i)=>{inp.value=data[id][i];});
+    }
+  });
+}
+</script>
+</body>
+</html>
