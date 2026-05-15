@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Padel Tournament Live Scoreboard</title>
+<style>
+body { margin:0; font-family:Arial; background:#0b0b2a; color:#fff; display:flex; flex-direction:column; align-items:center;}
+h1,h2 { color:#ffd700; text-align:center; }
+table { border-collapse: collapse; width:95%; margin:10px auto; font-size:1.2em; }
+th,td { border:2px solid #ffd700; padding:6px; text-align:center; }
+th { background-color:#1a1a4d; }
+.top4 { background-color:#00ff00; color:black; font-weight:bold; }
+.bottom4 { background-color:#ff4d4d; color:black; font-weight:bold; }
+input { width:50px; font-size:1em; text-align:center; border:none; background:#222; color:#fff; }
+#loginBox { margin:20px; text-align:center; }
+#pwdBox { display:none; margin-top:10px; }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+
+<h1>SMASH & BREATH - Tournament</h1>
+
+<div id="loginBox">
+  <span>اختر نوع الدخول: </span>
+  <button onclick="chooseUser('visitor')">زائر</button>
+  <button onclick="chooseUser('admin')">أدمن</button>
+  <div id="pwdBox">
+    <input type="password" id="adminPwd" placeholder="أدخل كلمة المرور">
+    <button onclick="checkPwd()">دخول</button>
+  </div>
+</div>
+
+<div id="content" class="hidden">
+  <h2>Group A</h2>
+  <table id="groupAAdmin">
+    <tr><th>#</th><th>Team</th><th>Played</th><th>Won</th><th>Lost</th><th>Sets For</th><th>Sets Against</th><th>Set Diff</th><th>Points</th></tr>
+  </table>
+
+  <h2>Group B</h2>
+  <table id="groupBAdmin">
+    <tr><th>#</th><th>Team</th><th>Played</th><th>Won</th><th>Lost</th><th>Sets For</th><th>Sets Against</th><th>Set Diff</th><th>Points</th></tr>
+  </table>
+
+  <h2>Quarter Finals</h2>
+  <table id="quarterFinals">
+    <tr><th>Match</th><th>Team 1</th><th>Score 1</th><th>Team 2</th><th>Score 2</th><th>Winner</th></tr>
+  </table>
+
+  <h2>Semi Finals</h2>
+  <table id="semiFinals">
+    <tr><th>Match</th><th>Team 1</th><th>Score 1</th><th>Team 2</th><th>Score 2</th><th>Winner</th></tr>
+  </table>
+
+  <h2>Final</h2>
+  <table id="finals">
+    <tr><th>Team 1</th><th>Score 1</th><th>Team 2</th><th>Score 2</th><th>Winner</th></tr>
+  </table>
+</div>
+
+<script>
+const groupA = ["خالد الدبو و كريم شقير","احمد بني عوده و رافع خريسات","كنان الشططاوي و عمر خصاونة","احمد حموري و رضا شادي","جعفر السريحين و عبدالله بطاينة","محمد يوسف و دولفقار","ايهم خصاونة و يوسف الشباب","ورد و حلا غرابية"];
+const groupB = ["سيف صباحة و زيد العجلوني","عون البلس و عامر العمري","مؤمن نجم و نمر العريق","زيد جرادات و يزن موسى","محمد بني هاني و عبد الرحمن ابو ملوح","ايتار الشططاوي و حسن حداد","المنذر مدحت و عبد الرحمن ابو لاوي","عامر عياش و علاء مشرقی"];
+let isAdmin = false;
+
+function blockVisitor(){
+  document.querySelectorAll('input').forEach(f=> f.readOnly=true);
+  document.querySelectorAll('button').forEach(b=> b.disabled=true);
+  document.addEventListener('contextmenu', e=> e.preventDefault());
+}
+
+function chooseUser(type){
+  if(type==="admin"){ document.getElementById("pwdBox").style.display="block"; } 
+  else{ isAdmin=false; alert("تم تسجيل الدخول كزائر 👀"); showContent(); blockVisitor(); }
+}
+
+function checkPwd(){
+  const pwd=document.getElementById("adminPwd").value;
+  if(pwd==="2537"){ isAdmin=true; alert("تم تسجيل الدخول كأدمن ✅"); showContent(); document.getElementById("pwdBox").style.display="none"; } 
+  else{ alert("كلمة المرور خاطئة ❌"); blockVisitor(); }
+}
+
+function showContent(){
+  document.getElementById("content").classList.remove("hidden");
+  populateGroup("groupAAdmin", groupA);
+  populateGroup("groupBAdmin", groupB);
+}
+
+function populateGroup(id, teams){
+  const table = document.getElementById(id);
+  teams.forEach((team,j)=>{
+    const row=table.insertRow();
+    row.insertCell(0).textContent=j+1;
+    row.insertCell(1).textContent=team;
+    const playedInput=document.createElement("input"); playedInput.type="number"; playedInput.min=0; playedInput.value=0;
+    const setsForInput=document.createElement("input"); setsForInput.type="number"; setsForInput.min=0; setsForInput.value=0;
+    const setsAgainstInput=document.createElement("input"); setsAgainstInput.type="number"; setsAgainstInput.min=0; setsAgainstInput.value=0;
+    row.insertCell(2).appendChild(playedInput);
+    row.insertCell(3).textContent=0;
+    row.insertCell(4).textContent=0;
+    row.insertCell(5).appendChild(setsForInput);
+    row.insertCell(6).appendChild(setsAgainstInput);
+    row.insertCell(7).textContent=0;
+    row.insertCell(8).textContent=0;
+    if(isAdmin){
+      [playedInput, setsForInput, setsAgainstInput].forEach(inp=> inp.addEventListener("input",()=>{ updateGroupRanking(); }));
+    } else { [playedInput, setsForInput, setsAgainstInput].forEach(inp=> inp.readOnly=true); }
+  });
+}
+
+function updateGroupRanking(){
+  const topA = calculateTop4('groupAAdmin');
+  const topB = calculateTop4('groupBAdmin');
+  buildQuarterFinals(topA, topB);
+}
+
+function calculateTop4(tableId){
+  const table=document.getElementById(tableId);
+  let teams=[];
+  for(let i=1;i<table.rows.length;i++){
+    const r=table.rows[i];
+    const setsFor=parseInt(r.cells[5].firstChild.value)||0;
+    const setsAgainst=parseInt(r.cells[6].firstChild.value)||0;
+    const points=setsFor-setsAgainst;
+    const setDiff=setsFor-setsAgainst;
+    teams.push({name:r.cells[1].textContent, points, setDiff});
+  }
+  teams.sort((a,b)=> b.points!==a.points? b.points-a.points : b.setDiff-a.setDiff );
+  return teams.slice(0,4).map(t=>t.name);
+}
+
+function buildQuarterFinals(topA, topB){
+  const qTable=document.getElementById("quarterFinals");
+  while(qTable.rows.length>1) qTable.deleteRow(1);
+  if(topA.length<4 || topB.length<4) return;
+  const matches=[[topA[0],topB[3]],[topA[1],topB[2]],[topA[2],topB[1]],[topA[3],topB[0]]];
+  matches.forEach((m,i)=>{
+    const row=qTable.insertRow();
+    row.insertCell(0).textContent="Match "+(i+1);
+    row.insertCell(1).textContent=m[0];
+    row.insertCell(2).innerHTML='<input type="number" min="0" value="0">';
+    row.insertCell(3).textContent=m[1];
+    row.insertCell(4).innerHTML='<input type="number" min="0" value="0">';
+    row.insertCell(5).textContent="TBD";
+    row.cells[2].firstChild.oninput = row.cells[4].firstChild.oninput = updateKnockouts;
+  });
+}
+
+function updateKnockouts(){
+  const qTable=document.getElementById("quarterFinals");
+  const semiTable=document.getElementById("semiFinals");
+  const finalTable=document.getElementById("finals");
+  while(semiTable.rows.length>1) semiTable.deleteRow(1);
+  while(finalTable.rows.length>1) finalTable.deleteRow(1);
+  let winners=[];
+  for(let i=1;i<qTable.rows.length;i++){
+    const r=qTable.rows[i];
+    const s1=parseInt(r.cells[2].firstChild.value)||0;
+    const s2=parseInt(r.cells[4].firstChild.value)||0;
+    const win=s1>s2?r.cells[1].textContent:(s2>s1?r.cells[3].textContent:"TBD");
+    r.cells[5].textContent=win;
+    if(win!=="TBD") winners.push(win);
+  }
+  if(winners.length>=4){
+    const semiMatches=[[winners[0],winners[1]],[winners[2],winners[3]]];
+    semiMatches.forEach((m,i)=>{
+      const row=semiTable.insertRow();
+      row.insertCell(0).textContent="Match "+(i+1);
+      row.insertCell(1).textContent=m[0];
+      row.insertCell(2).innerHTML='<input type="number" min="0" value="0">';
+      row.insertCell(3).textContent=m[1];
+      row.insertCell(4).innerHTML='<input type="number" min="0" value="0">';
+      row.insertCell(5).textContent="TBD";
+      row.cells[2].firstChild.oninput = row.cells[4].firstChild.oninput = updateFinal;
+    });
+  }
+}
+
+function updateFinal(){
+  const semiTable=document.getElementById("semiFinals");
+  const finalTable=document.getElementById("finals");
+  while(finalTable.rows.length>1) finalTable.deleteRow(1);
+  let winners=[];
+  for(let i=1;i<semiTable.rows.length;i++){
+    const r=semiTable.rows[i];
+    const s1=parseInt(r.cells[2].firstChild.value)||0;
+    const s2=parseInt(r.cells[4].firstChild.value)||0;
+    const win=s1>s2?r.cells[1].textContent:(s2>s1?r.cells[3].textContent:"TBD");
+    r.cells[5].textContent=win;
+    if(win!=="TBD") winners.push(win);
+  }
+  if(winners.length>=2){
+    const row=finalTable.insertRow();
+    row.insertCell(0).textContent=winners[0];
+    row.insertCell(1).innerHTML='<input type="number" min="0" value="0">';
+    row.insertCell(2).textContent=winners[1];
+    row.insertCell(3).innerHTML='<input type="number" min="0" value="0">';
+    row.insertCell(4).textContent="TBD";
+    row.cells[1].firstChild.oninput = row.cells[3].firstChild.oninput = updateChampion;
+  }
+}
+
+function updateChampion(){
+  const finalTable=document.getElementById("finals");
+  const r=finalTable.rows[1];
+  const s1=parseInt(r.cells[1].firstChild.value)||0;
+  const s2=parseInt(r.cells[3].firstChild.value)||0;
+  r.cells[4].textContent = s1>s2 ? r.cells[0].textContent : (s2>s1 ? r.cells[2].textContent : "TBD");
+}
+</script>
