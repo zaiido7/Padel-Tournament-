@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>Padel Tournament Live Scoreboard</title>
+<style>
+html, body { margin:0; padding:0; width:100%; font-family: Arial; background:#0b0b2a; color:#fff; }
+body { display:flex; flex-direction:column; align-items:center; overflow:auto; }
+h1,h2 { text-align:center; color:#ffd700; }
+table { border-collapse: collapse; width:95%; margin:10px auto; font-size:1.5em; }
+th, td { border:2px solid #ffd700; padding:10px; text-align:center; }
+th { background-color:#1a1a4d; }
+.top4 { background-color:#00ff00; color:black; font-weight:bold; }
+.bottom4 { background-color:#ff4d4d; color:black; font-weight:bold; }
+input { width:60px; font-size:1.2em; text-align:center; border:none; background:#222; color:#fff; }
+</style>
+</head>
+<body>
+
+<h1>SMASH & BREATH - Tournament</h1>
+
+<h2>Admin Panel - Enter Results</h2>
+
+<h2>Group A</h2>
+<table id="groupAAdmin">
+<tr><th>#</th><th>Team</th><th>Played</th><th>Won</th><th>Lost</th><th>Sets For</th><th>Sets Against</th><th>Set Diff</th><th>Points</th></tr>
+</table>
+
+<h2>Group B</h2>
+<table id="groupBAdmin">
+<tr><th>#</th><th>Team</th><th>Played</th><th>Won</th><th>Lost</th><th>Sets For</th><th>Sets Against</th><th>Set Diff</th><th>Points</th></tr>
+</table>
+
+<h2>Group Stage Results - Sorted</h2>
+<h2>Group A</h2>
+<table id="groupAScreen">
+<tr><th>#</th><th>Team</th><th>Played</th><th>Won</th><th>Lost</th><th>Sets For</th><th>Sets Against</th><th>Set Diff</th><th>Points</th></tr>
+</table>
+
+<h2>Group B</h2>
+<table id="groupBScreen">
+<tr><th>#</th><th>Team</th><th>Played</th><th>Won</th><th>Lost</th><th>Sets For</th><th>Sets Against</th><th>Set Diff</th><th>Points</th></tr>
+</table>
+
+<h2>Quarter Finals</h2>
+<table id="quarterFinals">
+<tr><th>Match</th><th>Team 1</th><th>Score 1</th><th>Team 2</th><th>Score 2</th><th>Winner</th></tr>
+</table>
+
+<h2>Semi Finals</h2>
+<table id="semiFinals">
+<tr><th>Match</th><th>Team 1</th><th>Score 1</th><th>Team 2</th><th>Score 2</th><th>Winner</th></tr>
+</table>
+
+<h2>Final</h2>
+<table id="finals">
+<tr><th>Team 1</th><th>Score 1</th><th>Team 2</th><th>Score 2</th><th>Winner</th></tr>
+</table>
+
+<script>
+// Teams
+const groupA = ["خالد الدبو و كريم شقير","احمد بني عوده و رافع خريسات","كنان الشططاوي و عمر خصاونة","احمد حموري و رضا شادي","جعفر السريحين و عبدالله بطاينة","محمد يوسف و دولفقار","ايهم خصاونة و يوسف الشباب","ورد و حلا غرابية"];
+const groupB = ["سيف صباحة و زيد العجلوني","عون البلس و عامر العمري","مؤمن نجم و نمر العريق","زيد جرادات و يزن موسى","محمد بني هاني و عبد الرحمن ابو ملوح","ايتار الشططاوي و حسن حداد","المنذر مدحت و عبد الرحمن ابو لاوي","عامر عياش و علاء مشرقی"];
+
+// Admin Panel init
+function createGroupAdmin(tableId, teams){
+  const table=document.getElementById(tableId);
+  teams.forEach((team,i)=>{
+    const row=table.insertRow();
+    row.insertCell(0).textContent=i+1;
+    row.insertCell(1).textContent=team;
+    let playedInput=document.createElement("input");
+    playedInput.type="number"; playedInput.min=0; playedInput.value=0; playedInput.oninput=updateGroups;
+    row.insertCell(2).appendChild(playedInput);
+    row.insertCell(3).textContent=0;
+    row.insertCell(4).textContent=0;
+    let setsFor=document.createElement("input"); setsFor.type="number"; setsFor.min=0; setsFor.value=0; setsFor.oninput=updateGroups;
+    row.insertCell(5).appendChild(setsFor);
+    let setsAgainst=document.createElement("input"); setsAgainst.type="number"; setsAgainst.min=0; setsAgainst.value=0; setsAgainst.oninput=updateGroups;
+    row.insertCell(6).appendChild(setsAgainst);
+    row.insertCell(7).textContent=0;
+    row.insertCell(8).textContent=0;
+  });
+}
+createGroupAdmin("groupAAdmin", groupA);
+createGroupAdmin("groupBAdmin", groupB);
+
+// Update Groups and build quarter finals
+function updateGroups(){
+  let topA=[], topB=[];
+  ["groupA","groupB"].forEach(group=>{
+    const admin=document.getElementById(group+"Admin");
+    const screen=document.getElementById(group+"Screen");
+    while(screen.rows.length>1) screen.deleteRow(1);
+    let teams=[];
+    for(let i=1;i<admin.rows.length;i++){
+      const r=admin.rows[i];
+      const played=parseInt(r.cells[2].firstChild.value)||0;
+      const setsFor=parseInt(r.cells[5].firstChild.value)||0;
+      const setsAgainst=parseInt(r.cells[6].firstChild.value)||0;
+      const won = setsFor>setsAgainst?1:0;
+      const lost = setsAgainst>setsFor?1:0;
+      const diff = setsFor-setsAgainst;
+      const points = won*3;
+      teams.push({team:r.cells[1].textContent, played, won, lost, setsFor, setsAgainst, diff, points});
+    }
+    // Sort by: Won desc, diff desc, setsFor desc, setsAgainst asc
+    teams.sort((a,b)=> {
+      if(b.won!==a.won) return b.won-a.won;
+      if(b.diff!==a.diff) return b.diff-a.diff;
+      if(b.setsFor!==a.setsFor) return b.setsFor-a.setsFor;
+      return a.setsAgainst-b.setsAgainst;
+    });
+    teams.forEach((t,i)=>{
+      const row=screen.insertRow();
+      row.insertCell(0).textContent=i+1;
+      row.insertCell(1).textContent=t.team;
+      row.insertCell(2).textContent=t.played;
+      row.insertCell(3).textContent=t.won;
+      row.insertCell(4).textContent=t.lost;
+      row.insertCell(5).textContent=t.setsFor;
+      row.insertCell(6).textContent=t.setsAgainst;
+      row.insertCell(7).textContent=t.diff;
+      row.insertCell(8).textContent=t.points;
+      row.className=(i<4)?"top4":"bottom4";
+    });
+    if(group==="groupA") topA=teams.slice(0,4).map(x=>x.team);
+    else topB=teams.slice(0,4).map(x=>x.team);
+  });
+
+  // Build quarter finals automatically based on sorted teams
+  const qTable=document.getElementById("quarterFinals");
+  if(qTable.rows.length===1){
+    const matches=[
+      [topA[0],topB[3]], // 1A vs 4B
+      [topA[1],topB[2]], // 2A vs 3B
+      [topA[2],topB[1]], // 3A vs 2B
+      [topA[3],topB[0]]  // 4A vs 1B
+    ];
+    matches.forEach((m,i)=>{
+      const row=qTable.insertRow();
+      row.insertCell(0).textContent="Match "+(i+1);
+      row.insertCell(1).textContent=m[0];
+      const sc1=row.insertCell(2); const i1=document.createElement("input"); i1.type="number"; i1.min=0; i1.value=0; sc1.appendChild(i1);
+      row.insertCell(3).textContent=m[1];
+      const sc2=row.insertCell(4); const i2=document.createElement("input"); i2.type="number"; i2.min=0; i2.value=0; sc2.appendChild(i2);
+      row.insertCell(5).textContent="TBD";
+      i1.oninput=i2.oninput=updateKnockout;
+    });
+  }
+}
+
+// Remaining functions for knockout semi/final can stay as in previous version
+// (updateKnockout and updateFinal / updateChampion)
+</script>
+</body>
+</html>
