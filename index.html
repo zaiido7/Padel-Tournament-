@@ -1,120 +1,160 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smash & Breath - YU LC</title>
+<title>SMASH & BREATH - Tournament</title>
 <style>
-  body {
-    margin: 0;
-    height: 100vh;
-    background-color: #0b0c2a; /* أزرق داكن */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #ffd700; /* الذهبي */
-    text-align: center;
-  }
-
-  .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-  }
-
-  h1 {
-    font-size: 4em;
-    font-weight: bold;
-    text-shadow: 0 0 4px #ffd700, 0 0 8px #ffd700;
-    margin: 0;
-  }
-
-  h2 {
-    font-size: 2em;
-    font-weight: 600;
-    text-shadow: 0 0 3px #ffd700, 0 0 6px #ffd700;
-    margin: 0;
-  }
-
-  .divider {
-    width: 100px;
-    height: 3px;
-    background-color: #ffd700;
-    border-radius: 2px;
-    margin-top: 10px;
-  }
-
-  .countdown {
-    display: flex;
-    gap: 15px;
-    font-size: 2em;
-    margin-top: 20px;
-    text-shadow: 0 0 3px #ffd700, 0 0 6px #ffd700;
-  }
-
-  .countdown span {
-    display: inline-block;
-    min-width: 60px;
-    background: rgba(255, 215, 0, 0.1);
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px #ffd700;
-  }
-
-  .label {
-    display: block;
-    font-size: 0.5em;
-    margin-top: 5px;
-  }
+body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; margin:0; padding:0; background:#0b1e3a; color:#fff;}
+.hidden {display:none;}
+header {padding:10px; background-color: rgba(0,0,0,0.5);}
+header h1 {margin:0;font-size:2rem;text-align:center; color:#ffd700; letter-spacing:2px;}
+header h2 {margin:0;font-size:1.5rem;text-align:center; color:#ffd700;}
+.nav-container {display:flex; justify-content:space-between; align-items:flex-start; padding:10px; background:rgba(0,0,0,0.3);}
+.nav-left, .nav-right {display:flex; flex-direction:column; gap:5px;}
+.nav-left a, .nav-right a, .nav-left select, .nav-left button {padding:5px 10px; border-radius:5px; border:none; font-size:0.85rem; cursor:pointer; text-decoration:none; color:#000; background:#ffd700; text-align:center;}
+.nav-right a {margin-bottom:5px;}
+button {padding:15px 30px; margin:10px; font-size:1.2rem; border:none; border-radius:8px; cursor:pointer; background:#ffd700; color:#000;}
+button:hover {background:#ffc107;}
+.container {display:flex; flex-wrap:wrap; justify-content:center; gap:20px; padding:20px;}
+.group, .knockout {background:rgba(255,255,255,0.05); border-radius:10px; padding:20px; min-width:350px; flex:1 1 350px;}
+.group h2, .knockout h2 {text-align:center;margin-bottom:10px; color:#ffd700;}
+.team {margin-bottom:20px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px;}
+.team h3 {margin:5px 0;}
+.matches {display:flex; flex-wrap:nowrap; gap:10px; overflow-x:auto;}
+.match {background:rgba(255,255,255,0.05); padding:5px; border-radius:5px; min-width:140px; flex:0 0 auto;}
+.match label {display:block; font-size:0.8rem; margin-bottom:4px;}
+input {width:50px; text-align:center; margin-top:2px;}
+.standings {margin-top:20px; text-align:center;}
+.standings h2 {color:#00ffea;}
+.knockout-match {margin-bottom:10px; padding:5px; background:rgba(0,0,0,0.2); border-radius:5px;}
+.knockout h3 {margin:5px 0;}
+.champion {text-align:center; margin-top:20px; font-size:1.5rem; color:#ffdd00;}
+.winner {background-color: rgba(0,255,0,0.3);}
+.loser {background-color: rgba(255,0,0,0.3);}
+.disabled input {background:#ccc;color:#666; cursor:not-allowed;}
 </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>SMASH & BREATH</h1>
-  <h2>YU LC</h2>
-  <div class="divider"></div>
+<!-- شاشة الترحيب -->
+<div id="welcomeScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center;">
+  <h1 style="font-size:3rem; color:#ffd700; margin-bottom:10px;">Welcome to SMASH & BREATH</h1>
+  <h2 style="font-size:2rem; color:#ffd700; margin-bottom:40px;">YU LC</h2>
+  <button id="participantsBtn">Participants</button>
+  <button id="adminBtn">Admins</button>
+</div>
 
-  <div class="countdown">
-    <span><span id="days">00</span><span class="label">Days</span></span>
-    <span><span id="hours">00</span><span class="label">Hours</span></span>
-    <span><span id="minutes">00</span><span class="label">Minutes</span></span>
-    <span><span id="seconds">00</span><span class="label">Seconds</span></span>
+<!-- صفحة البطولة -->
+<div id="tournamentScreen" class="hidden">
+<header>
+<h1>SMASH & BREATH</h1>
+<h2>YU LC</h2>
+<div class="nav-container">
+  <!-- عمود الفرق -->
+  <div class="nav-left" id="teamsNav"></div>
+  <div class="nav-right">
+    <a href="#QuarterFinals">Quarter-Finals</a>
+    <a href="#SemiFinals">Semi-Finals</a>
+    <a href="#Final">Final</a>
+    <a href="#Champion">Champion</a>
   </div>
+</div>
+</header>
+
+<div class="container">
+<div class="group" id="groupA"><h2>Group A</h2></div>
+<div class="group" id="groupB"><h2>Group B</h2></div>
+</div>
+
+<div class="standings"><h2>Standings</h2><div id="standings"></div></div>
+
+<div class="knockout">
+<h2 id="QuarterFinals">Quarter-Finals</h2><div id="knockouts"></div>
+<h2 id="SemiFinals">Semi-Finals</h2><div id="semi-finals"></div>
+<h2 id="Final">Final</h2><div id="final"></div>
+<div class="champion" id="Champion"><strong>Champion: <span id="championName">TBD</span></strong></div>
+</div>
 </div>
 
 <script>
-function updateCountdown() {
-  const now = new Date();
-  const targetDate = new Date();
+// Variables
+let isAdmin=false, isParticipant=false;
+let tournamentStarted=false;
+const groupNames=['A','B'], teamCount=8, matchCount=7;
+let localStorageKnockouts={};
 
-  const today = now.getDay(); // 0=الأحد, 1=الاثنين, ..., 6=السبت
-  let daysUntilMonday = (1 - today + 7) % 7;
-  if (daysUntilMonday === 0 && now.getHours() >= 15) {
-    daysUntilMonday = 7; // إذا اليوم الاثنين بعد الساعة 3 عصراً، ننتظر الاثنين القادم
+const teamsA=[
+"خالد البدو و كريم شقير","احمد بني عوده و رافع خريسات","كنان الشطناوي و عمر خصاونة","احمد حموري و رضا شادي",
+"جعفر السريحين و عبدالله بطاينة","محمد يوسف و ذوالفقار","ايهم خصاونة و يوسف الشباب","ورد و حلا غرايبة"
+];
+const teamsB=[
+"سيف صبابحة و زيد العجلوني","عون البلص و عامر العمري","مؤمن نجم و نمر العريق","زيد جرادات و يزن موسى",
+"محمد بني هاني و عبد الرحمن ابو ملوح","ايثار الشطناوي و حسن حداد","المندّر مدحت و عبد الرحمن ابو لاوي","عامر عياش و علاء المشرقي"
+];
+
+// Welcome buttons
+document.getElementById('participantsBtn').addEventListener('click',()=>{
+  if(!tournamentStarted){
+    isParticipant=true; isAdmin=false;
+    document.getElementById('welcomeScreen').classList.add('hidden');
+    document.getElementById('tournamentScreen').classList.remove('hidden');
+    startTournament();
+    tournamentStarted=true;
   }
+});
+document.getElementById('adminBtn').addEventListener('click',()=>{
+  if(!tournamentStarted){
+    const code=prompt("Enter Admin Code:");
+    if(code==='2537'){
+      isAdmin=true; isParticipant=false;
+      document.getElementById('welcomeScreen').classList.add('hidden');
+      document.getElementById('tournamentScreen').classList.remove('hidden');
+      startTournament();
+      tournamentStarted=true;
+    } else alert("Incorrect code!");
+  }
+});
 
-  targetDate.setDate(now.getDate() + daysUntilMonday);
-  targetDate.setHours(15, 0, 0, 0);
-
-  const diff = targetDate - now;
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-  const minutes = Math.floor((diff / (1000 * 60)) % 60);
-  const seconds = Math.floor((diff / 1000) % 60);
-
-  document.getElementById('days').textContent = days.toString().padStart(2,'0');
-  document.getElementById('hours').textContent = hours.toString().padStart(2,'0');
-  document.getElementById('minutes').textContent = minutes.toString().padStart(2,'0');
-  document.getElementById('seconds').textContent = seconds.toString().padStart(2,'0');
+// Populate Teams Navigation
+function populateTeamsNav(){
+  const nav=document.getElementById('teamsNav');
+  nav.innerHTML='';
+  teamsA.forEach((t,i)=>{
+    const a=document.createElement('a'); a.href='#teamA'+(i+1); a.textContent=t; nav.appendChild(a);
+  });
+  teamsB.forEach((t,i)=>{
+    const a=document.createElement('a'); a.href='#teamB'+(i+1); a.textContent=t; nav.appendChild(a);
+  });
 }
 
-updateCountdown();
-setInterval(updateCountdown, 1000);
-</script>
+// Tournament setup
+function startTournament(){
+  populateTeamsNav();
+  const containerA=document.getElementById('groupA');
+  const containerB=document.getElementById('groupB');
+  
+  function createTeamDiv(container,name,id){
+    const div=document.createElement('div'); div.className='team'; div.id=id;
+    let matchesHTML='';
+    for(let m=1;m<=matchCount;m++){
+      matchesHTML+=`<div class="match">
+<label>Match ${m} Sets For<input type="number" min="0" value="0" class="setsForInput"></label>
+<label>Match ${m} Sets Against<input type="number" min="0" value="0" class="setsAgainstInput"></label>
+</div>`;
+    }
+    div.innerHTML=`<h3>${name}</h3><div class="matches">${matchesHTML}</div>
+<p>Played: <span class="played">0</span> | Won: <span class="won">0</span> | Lost: <span class="lost">0</span> | Sets For: <span class="setsFor">0</span> | Sets Against: <span class="setsAgainst">0</span> | Diff: <span class="diff">0</span> | Points: <span class="points">0</span></p>`;
+    container.appendChild(div);
+  }
 
+  teamsA.forEach((t,i)=>createTeamDiv(containerA,t,'teamA'+(i+1)));
+  teamsB.forEach((t,i)=>createTeamDiv(containerB,t,'teamB'+(i+1)));
+
+  if(isParticipant) document.querySelectorAll('input').forEach(inp=>inp.disabled=true);
+
+  // هنا يتم دمج كل كود Standings + Knockouts + Progression كما في النسخة النهائية
+}
+</script>
 </body>
 </html>
