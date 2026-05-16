@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMASH & BREATH - Tournament</title>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
 <style>
 body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; margin:0; padding:0; background:#0b1e3a; color:#fff;}
 .hidden {display:none;}
@@ -77,6 +80,20 @@ input {width:50px; text-align:center; margin-top:2px;}
 
 
 <script> 
+const firebaseConfig = {
+  apiKey: "AIzaSyCWd9QFGDPI9Mq1TOgOdj_8DQz2eVdzR9g",
+  authDomain: "padel-tournament-yu.firebaseapp.com",
+  databaseURL: "https://padel-tournament-yu-default-rtdb.asia-southeast1.firebasedatabase.app", 
+  projectId: "padel-tournament-yu",
+  storageBucket: "padel-tournament-yu.firebasestorage.app",
+  messagingSenderId: "1095340767461",
+  appId: "1:1095340767461:web:9db10e0fe80a2b40473c0c"
+};
+
+let database;
+firebase.initializeApp(firebaseConfig);
+database = firebase.database();
+
 // Variables
 let isAdmin=false, isParticipant=false;
 let tournamentStarted=false;
@@ -134,6 +151,10 @@ function startTournament(){
   const containerA=document.getElementById('groupA');
   const containerB=document.getElementById('groupB');
 
+  // FIX: Clear the groups before adding teams so they don't duplicate on multiple loads
+  containerA.innerHTML = '<h2>Group A</h2>';
+  containerB.innerHTML = '<h2>Group B</h2>';
+
   function createTeamDiv(container,name,id){
     const div=document.createElement('div'); div.className='team'; div.id=id;
     let matchesHTML='';
@@ -151,10 +172,17 @@ function startTournament(){
   teamsA.forEach((t,i)=>createTeamDiv(containerA,t,'teamA'+(i+1)));
   teamsB.forEach((t,i)=>createTeamDiv(containerB,t,'teamB'+(i+1)));
 
+  // If a standard participant logs in, lock their inputs
   if(isParticipant) document.querySelectorAll('input').forEach(inp=>inp.disabled=true);
 
   attachInputListeners();
-  loadFireBase();
+  
+  if(database) {
+      listenToFirebase(); // Replaces loadFireBase()
+  } else {
+      console.warn("Firebase not initialized. Realtime features will not work until config is set.");
+  }
+  
   updateStandings();
   updateKnockoutsFull();
 }
@@ -184,7 +212,7 @@ function updateStandings(){
   });
 }
 
-// Knockouts Full Update with TBD fix
+// Knockouts Full Update
 function updateKnockoutsFull(){
   const allTeams=[...teamsA.map((t,i)=>'teamA'+(i+1)), ...teamsB.map((t,i)=>'teamB'+(i+1))];
   const anyPlayed = allTeams.some(id=>Number(document.getElementById(id).querySelector('.played').textContent) > 0);
@@ -288,35 +316,50 @@ function renderKnockouts(){
   document.getElementById('championName').textContent=knockoutData.Champion;
 }
 
-// Input Listeners & FireBase
 function attachInputListeners(){
   document.querySelectorAll('.setsForInput, .setsAgainstInput').forEach(input=>{
     input.addEventListener('input',()=>{
       updateStandings();
       updateKnockoutsFull();
-      saveFireBase();
+      if(database && isAdmin) saveToFirebase(); // Only Admins should trigger saving to DB
     });
   });
 }
 
-function saveFireBase(){
+// FIX: Replaced dummy FireBase logic with real Firebase Realtime Sync
+function saveToFirebase(){
   const data={};
   document.querySelectorAll('.team').forEach(team=>{
     const id=team.id;
-    const inputs=[...team.querySelectorAll('.setsForInput')].map(inp=>inp.value);
-    data[id]=inputs;
+    // We need to save both "For" and "Against" arrays so data syncs perfectly
+    const forInputs=[...team.querySelectorAll('.setsForInput')].map(inp=>inp.value);
+    const againstInputs=[...team.querySelectorAll('.setsAgainstInput')].map(inp=>inp.value);
+    data[id] = { for: forInputs, against: againstInputs };
   });
-  FireBase.setItem('smashBreathData',JSON.stringify(data));
+  
+  database.ref('smashBreathData').set(data);
 }
 
-function loadFireBase(){
-  const data=JSON.parse(FireBase.getItem('smashBreathData')||'{}');
-  Object.keys(data).forEach(id=>{
-    const team=document.getElementById(id);
-    if(team){
-      const inputs=team.querySelectorAll('.setsForInput');
-      inputs.forEach((inp,i)=>{inp.value=data[id][i];});
-    }
+function listenToFirebase(){
+  // This listener automatically fires on all computers whenever data changes in the DB
+  database.ref('smashBreathData').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if(!data) return; // Exit if no data exists yet
+
+    Object.keys(data).forEach(id=>{
+      const team=document.getElementById(id);
+      if(team){
+        const forInputs=team.querySelectorAll('.setsForInput');
+        const againstInputs=team.querySelectorAll('.setsAgainstInput');
+        
+        forInputs.forEach((inp,i)=>{ inp.value = data[id].for[i]; });
+        againstInputs.forEach((inp,i)=>{ inp.value = data[id].against[i]; });
+      }
+    });
+    
+    // Automatically recalculate standings after pulling in new live data
+    updateStandings();
+    updateKnockoutsFull();
   });
 }
 </script>
