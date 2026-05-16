@@ -9,7 +9,7 @@
 
 <style>
 body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; margin:0; padding:0; background:#0b1e3a; color:#fff;}
-.hidden {display:none;}
+.hidden {display:none !important;} /* Added !important to ensure hiding works robustly */
 header {padding:10px; background-color: rgba(0,0,0,0.5);}
 header h1 {margin:0;font-size:2rem;text-align:center; color:#ffd700; letter-spacing:2px;}
 header h2 {margin:0;font-size:1.5rem;text-align:center; color:#ffd700;}
@@ -19,6 +19,11 @@ header h2 {margin:0;font-size:1.5rem;text-align:center; color:#ffd700;}
 .nav-right a {margin-bottom:5px;}
 button {padding:15px 30px; margin:10px; font-size:1.2rem; border:none; border-radius:8px; cursor:pointer; background:#ffd700; color:#000;}
 button:hover {background:#ffc107;}
+
+/* New style for the reset button */
+.danger-btn {background-color: #ff4444 !important; color: #fff !important; margin-top: 10px; padding: 5px 10px !important; font-size: 0.85rem !important; font-weight: bold;}
+.danger-btn:hover {background-color: #cc0000 !important;}
+
 .container {display:flex; flex-wrap:wrap; justify-content:center; gap:20px; padding:20px;}
 .group, .knockout {background:rgba(255,255,255,0.05); border-radius:10px; padding:20px; min-width:350px; flex:1 1 350px;}
 .group h2, .knockout h2 {text-align:center;margin-bottom:10px; color:#ffd700;}
@@ -30,12 +35,14 @@ button:hover {background:#ffc107;}
 input {width:50px; text-align:center; margin-top:2px;}
 .standings {margin-top:20px; text-align:center;}
 .standings h2 {color:#00ffea;}
-.knockout-match {margin-bottom:10px; padding:5px; background:rgba(0,0,0,0.2); border-radius:5px;}
+.knockout-match {margin-bottom:10px; padding:10px; background:rgba(0,0,0,0.3); border-radius:8px; border-left: 4px solid #ffd700;}
+.knockout-match p {margin: 5px 0;}
 .knockout h3 {margin:5px 0;}
 .champion {text-align:center; margin-top:20px; font-size:1.5rem; color:#ffdd00;}
 .winner {background-color: rgba(0,255,0,0.3);}
 .loser {background-color: rgba(255,0,0,0.3);}
 .disabled input {background:#ccc;color:#666; cursor:not-allowed;}
+select.winner-select { padding: 5px; border-radius: 4px; background: #222; color: #fff; border: 1px solid #ffd700; margin-left: 10px; font-family: inherit; font-size: 0.9rem;}
 </style>
 </head>
 <body>
@@ -58,6 +65,7 @@ input {width:50px; text-align:center; margin-top:2px;}
     <a href="#SemiFinals">Semi-Finals</a>
     <a href="#Final">Final</a>
     <a href="#Champion">Champion</a>
+    <button id="resetBtn" class="danger-btn hidden">⚠️ Reset Tournament</button>
   </div>
 </div>
 </header>
@@ -73,11 +81,9 @@ input {width:50px; text-align:center; margin-top:2px;}
 <h2 id="QuarterFinals">Quarter-Finals</h2><div id="knockouts"></div>
 <h2 id="SemiFinals">Semi-Finals</h2><div id="semi-finals"></div>
 <h2 id="Final">Final</h2><div id="final"></div>
-<div class="champion" id="Champion"><strong>Champion: <span id="championName">TBD</span></strong></div>
+<div class="champion" id="Champion"><strong>Champion: <span id="championName" style="color: #fff;">TBD</span></strong></div>
 </div>
 </div>
-
-
 
 <script> 
 const firebaseConfig = {
@@ -99,9 +105,11 @@ let isAdmin=false, isParticipant=false;
 let tournamentStarted=false;
 const matchCount=7;
 
+let manualWinners = { QF: ['','','',''], SF: ['',''], Final: [''] };
+
 const teamsA=[
 "خالد البدو و كريم شقير","احمد بني عوده و رافع خريسات","كنان الشطناوي و عمر خصاونة","احمد حموري و رضا شادي",
-"جعفر السريحين و عبدالله بطاينة","محمد يوسف و ذوالفقار","ايهم خصاونة و يوسف الشياب","ورد و حلا غرايبة"
+"جعفر السريحين و عبدالله بطاينة","محمد يوسف و ذوالفقار","ايهم خصاونة و يوسف الشباب","ورد و حلا غرايبة"
 ];
 const teamsB=[
 "سيف صبابحة و زيد العجلوني","عون البلص و عامر العمري","مؤمن نجم و نمر العريق","زيد جرادات و يزن موسى",
@@ -120,6 +128,7 @@ document.getElementById('participantsBtn').addEventListener('click',()=>{
     tournamentStarted=true;
   }
 });
+
 document.getElementById('adminBtn').addEventListener('click',()=>{
   if(!tournamentStarted){
     const code=prompt("Enter Admin Code:");
@@ -127,9 +136,38 @@ document.getElementById('adminBtn').addEventListener('click',()=>{
       isAdmin=true; isParticipant=false;
       document.getElementById('welcomeScreen').classList.add('hidden');
       document.getElementById('tournamentScreen').classList.remove('hidden');
+      
+      // Reveal the Reset button ONLY to the Admin
+      document.getElementById('resetBtn').classList.remove('hidden');
+      
       startTournament();
       tournamentStarted=true;
     } else alert("Incorrect code!");
+  }
+});
+
+// Reset Button Logic
+document.getElementById('resetBtn').addEventListener('click', () => {
+  // 1. Ask for confirmation
+  const isSure = confirm("⚠️ WARNING: Are you sure you want to RESET the entire tournament? All scores and knockout winners will be erased for everyone. This cannot be undone.");
+  
+  if(isSure) {
+    // 2. Wipe all inputs back to 0
+    document.querySelectorAll('.setsForInput, .setsAgainstInput').forEach(inp => {
+      inp.value = 0;
+    });
+    
+    // 3. Wipe the manual winners memory
+    manualWinners = { QF: ['','','',''], SF: ['',''], Final: [''] };
+    
+    // 4. Update the UI locally
+    updateStandings();
+    updateKnockoutsFull();
+    
+    // 5. Send the blank slate to Firebase so all participants see the reset
+    if(database && isAdmin) saveToFirebase();
+    
+    alert("Tournament has been completely reset.");
   }
 });
 
@@ -151,7 +189,6 @@ function startTournament(){
   const containerA=document.getElementById('groupA');
   const containerB=document.getElementById('groupB');
 
-  // FIX: Clear the groups before adding teams so they don't duplicate on multiple loads
   containerA.innerHTML = '<h2>Group A</h2>';
   containerB.innerHTML = '<h2>Group B</h2>';
 
@@ -172,16 +209,11 @@ function startTournament(){
   teamsA.forEach((t,i)=>createTeamDiv(containerA,t,'teamA'+(i+1)));
   teamsB.forEach((t,i)=>createTeamDiv(containerB,t,'teamB'+(i+1)));
 
-  // If a standard participant logs in, lock their inputs
   if(isParticipant) document.querySelectorAll('input').forEach(inp=>inp.disabled=true);
 
   attachInputListeners();
   
-  if(database) {
-      listenToFirebase(); // Replaces loadFireBase()
-  } else {
-      console.warn("Firebase not initialized. Realtime features will not work until config is set.");
-  }
+  if(database) listenToFirebase(); 
   
   updateStandings();
   updateKnockoutsFull();
@@ -212,20 +244,7 @@ function updateStandings(){
   });
 }
 
-// Knockouts Full Update
 function updateKnockoutsFull(){
-  const allTeams=[...teamsA.map((t,i)=>'teamA'+(i+1)), ...teamsB.map((t,i)=>'teamB'+(i+1))];
-  const anyPlayed = allTeams.some(id=>Number(document.getElementById(id).querySelector('.played').textContent) > 0);
-
-  if(!anyPlayed){
-    knockoutData.QF = [{team1:'TBD',team2:'TBD',winner:'TBD'}, {team1:'TBD',team2:'TBD',winner:'TBD'}];
-    knockoutData.SF = [{team1:'TBD',team2:'TBD',winner:'TBD'}];
-    knockoutData.Final = [{team1:'TBD',team2:'TBD',winner:'TBD'}];
-    knockoutData.Champion = 'TBD';
-    renderKnockouts();
-    return;
-  }
-
   const sortedA = [...teamsA.map((t,i)=>'teamA'+(i+1))].sort((a,b)=>{
     const pa = Number(document.getElementById(a).querySelector('.points').textContent);
     const pb = Number(document.getElementById(b).querySelector('.points').textContent);
@@ -243,62 +262,65 @@ function updateKnockoutsFull(){
     return db-da;
   });
 
-  // QF
   knockoutData.QF = [
-    {team1: sortedA[0], team2: sortedB[1], winner:''},
-    {team1: sortedB[0], team2: sortedA[1], winner:''}
+    {team1: sortedA[0], team2: sortedB[3], winner: manualWinners.QF[0] || ''},
+    {team1: sortedA[1], team2: sortedB[2], winner: manualWinners.QF[1] || ''},
+    {team1: sortedB[0], team2: sortedA[3], winner: manualWinners.QF[2] || ''},
+    {team1: sortedB[1], team2: sortedA[2], winner: manualWinners.QF[3] || ''}
   ];
 
-  knockoutData.QF.forEach(match=>{
-    if(match.team1!=='TBD' && match.team2!=='TBD'){
-      const won1=Number(document.getElementById(match.team1).querySelector('.won').textContent);
-      const won2=Number(document.getElementById(match.team2).querySelector('.won').textContent);
-      match.winner = won1>won2 ? match.team1 : (won2>won1 ? match.team2 : 'TBD');
-    } else match.winner='TBD';
-  });
-
-  // SF
   knockoutData.SF = [
-    {team1: knockoutData.QF[0].winner, team2: knockoutData.QF[1].winner, winner:''}
+    {team1: knockoutData.QF[0].winner || 'TBD', team2: knockoutData.QF[3].winner || 'TBD', winner: manualWinners.SF[0] || ''},
+    {team1: knockoutData.QF[2].winner || 'TBD', team2: knockoutData.QF[1].winner || 'TBD', winner: manualWinners.SF[1] || ''}
   ];
-  knockoutData.SF.forEach(match=>{
-    if(match.team1!=='TBD' && match.team2!=='TBD'){
-      const won1=Number(document.getElementById(match.team1).querySelector('.won').textContent);
-      const won2=Number(document.getElementById(match.team2).querySelector('.won').textContent);
-      match.winner = won1>won2 ? match.team1 : (won2>won1 ? match.team2 : 'TBD');
-    } else match.winner='TBD';
-  });
 
-  // Final
   knockoutData.Final = [
-    {team1: knockoutData.SF[0].winner, team2:'TBD', winner: knockoutData.SF[0].winner!=='TBD'? knockoutData.SF[0].winner:'TBD'}
+    {team1: knockoutData.SF[0].winner || 'TBD', team2: knockoutData.SF[1].winner || 'TBD', winner: manualWinners.Final[0] || ''}
   ];
 
-  // Champion
   knockoutData.Champion = knockoutData.Final[0].winner || 'TBD';
 
   renderKnockouts();
 }
 
-// Render Knockouts
+function getTeamName(id) {
+  if (!id || id === 'TBD') return 'TBD';
+  const el = document.getElementById(id);
+  return el ? el.querySelector('h3').textContent : 'TBD';
+}
+
+function buildSelect(stage, index, match) {
+  if (!isAdmin) {
+    return `<span style="color: #00ffea;">${getTeamName(match.winner)}</span>`;
+  }
+
+  const t1Name = getTeamName(match.team1);
+  const t2Name = getTeamName(match.team2);
+  
+  let html = `<select class="winner-select" data-stage="${stage}" data-index="${index}">
+      <option value="">-- Select Winner --</option>`;
+  if(match.team1 && match.team1 !== 'TBD') html += `<option value="${match.team1}" ${match.winner===match.team1?'selected':''}>${t1Name}</option>`;
+  if(match.team2 && match.team2 !== 'TBD') html += `<option value="${match.team2}" ${match.winner===match.team2?'selected':''}>${t2Name}</option>`;
+  html += `</select>`;
+  return html;
+}
+
 function renderKnockouts(){
   const QFContainer=document.getElementById('knockouts');
   QFContainer.innerHTML='';
   knockoutData.QF.forEach((match,i)=>{
-    const t1=document.getElementById(match.team1)?.querySelector('h3').textContent||'TBD';
-    const t2=document.getElementById(match.team2)?.querySelector('h3').textContent||'TBD';
     const div=document.createElement('div'); div.className='knockout-match';
-    div.innerHTML=`<p>QF Match ${i+1}: ${t1} vs ${t2} | Winner: ${match.winner}</p>`;
+    div.innerHTML=`<p><strong>QF ${i+1}:</strong> ${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</p>
+                   <p>Winner: ${buildSelect('QF', i, match)}</p>`;
     QFContainer.appendChild(div);
   });
 
   const SFContainer=document.getElementById('semi-finals');
   SFContainer.innerHTML='';
   knockoutData.SF.forEach((match,i)=>{
-    const t1=document.getElementById(match.team1)?.querySelector('h3').textContent||'TBD';
-    const t2=document.getElementById(match.team2)?.querySelector('h3').textContent||'TBD';
     const div=document.createElement('div'); div.className='knockout-match';
-    div.innerHTML=`<p>Semi-Final ${i+1}: ${t1} vs ${t2} | Winner: ${match.winner}</p>`;
+    div.innerHTML=`<p><strong>SF ${i+1}:</strong> ${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</p>
+                   <p>Winner: ${buildSelect('SF', i, match)}</p>`;
     SFContainer.appendChild(div);
   });
 
@@ -306,14 +328,23 @@ function renderKnockouts(){
   FContainer.innerHTML='';
   if(knockoutData.Final.length>0){
     const match=knockoutData.Final[0];
-    const t1=document.getElementById(match.team1)?.querySelector('h3').textContent||'TBD';
-    const t2=match.team2||'TBD';
     const div=document.createElement('div'); div.className='knockout-match';
-    div.innerHTML=`<p>Final: ${t1} vs ${t2} | Winner: ${match.winner}</p>`;
+    div.innerHTML=`<p><strong>FINAL:</strong> ${getTeamName(match.team1)} vs ${getTeamName(match.team2)}</p>
+                   <p>Winner: ${buildSelect('Final', 0, match)}</p>`;
     FContainer.appendChild(div);
   }
 
-  document.getElementById('championName').textContent=knockoutData.Champion;
+  document.getElementById('championName').textContent=getTeamName(knockoutData.Champion);
+
+  document.querySelectorAll('.winner-select').forEach(select => {
+    select.addEventListener('change', (e) => {
+      const stage = e.target.getAttribute('data-stage');
+      const index = parseInt(e.target.getAttribute('data-index'));
+      manualWinners[stage][index] = e.target.value; 
+      updateKnockoutsFull(); 
+      if(database && isAdmin) saveToFirebase(); 
+    });
+  });
 }
 
 function attachInputListeners(){
@@ -321,45 +352,53 @@ function attachInputListeners(){
     input.addEventListener('input',()=>{
       updateStandings();
       updateKnockoutsFull();
-      if(database && isAdmin) saveToFirebase(); // Only Admins should trigger saving to DB
+      if(database && isAdmin) saveToFirebase(); 
     });
   });
 }
 
-// FIX: Replaced dummy FireBase logic with real Firebase Realtime Sync
 function saveToFirebase(){
   const data={};
   document.querySelectorAll('.team').forEach(team=>{
     const id=team.id;
-    // We need to save both "For" and "Against" arrays so data syncs perfectly
     const forInputs=[...team.querySelectorAll('.setsForInput')].map(inp=>inp.value);
     const againstInputs=[...team.querySelectorAll('.setsAgainstInput')].map(inp=>inp.value);
     data[id] = { for: forInputs, against: againstInputs };
   });
   
+  data.knockoutWinners = manualWinners;
+  
   database.ref('smashBreathData').set(data);
 }
 
 function listenToFirebase(){
-  // This listener automatically fires on all computers whenever data changes in the DB
   database.ref('smashBreathData').on('value', (snapshot) => {
     const data = snapshot.val();
-    if(!data) return; // Exit if no data exists yet
+    if(!data) return; 
 
-    Object.keys(data).forEach(id=>{
-      const team=document.getElementById(id);
-      if(team){
-        const forInputs=team.querySelectorAll('.setsForInput');
-        const againstInputs=team.querySelectorAll('.setsAgainstInput');
-        
-        forInputs.forEach((inp,i)=>{ inp.value = data[id].for[i]; });
-        againstInputs.forEach((inp,i)=>{ inp.value = data[id].against[i]; });
+    try {
+      if (data.knockoutWinners) {
+         manualWinners = data.knockoutWinners;
       }
-    });
-    
-    // Automatically recalculate standings after pulling in new live data
-    updateStandings();
-    updateKnockoutsFull();
+
+      Object.keys(data).forEach(id=>{
+        if (id === 'knockoutWinners') return; 
+
+        const team=document.getElementById(id);
+        if(team && data[id].for && data[id].against){
+          const forInputs=team.querySelectorAll('.setsForInput');
+          const againstInputs=team.querySelectorAll('.setsAgainstInput');
+          
+          forInputs.forEach((inp,i)=>{ inp.value = data[id].for[i]; });
+          againstInputs.forEach((inp,i)=>{ inp.value = data[id].against[i]; });
+        }
+      });
+      
+      updateStandings();
+      updateKnockoutsFull();
+    } catch(error) {
+      console.log("Ignored old data format.", error);
+    }
   });
 }
 </script>
